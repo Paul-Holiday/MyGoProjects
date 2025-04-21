@@ -57,4 +57,33 @@ func main() {
 	c := cap(cars)
 	l := len(cars)
 	fmt.Println("cap of slice cars -", c, "length of slice cars - ", l) // вместимость (ёмкость) и длина слайса cars
+
+	//слайс через make
+	newslice := make([]int, 5, 10) // len(newslice) = 5, cap(newslice) = 10
+
+	// наполняю слайс значениями через цикл
+	i = 0
+	for i < len(newslice) {
+		newslice[i] = i
+		i++
+	}
+
+	// удаляю первый элемент переназначая слайс
+	tempSlice := newslice[1:]
+	fmt.Println(tempSlice)
+	fmt.Println(len(tempSlice))
+	fmt.Println(cap(tempSlice))
+
+	// вывожу новый слайс и смотрю его длину и ёмкость
+	fmt.Println(newslice)
+	fmt.Println(len(newslice))
+	fmt.Println(cap(newslice), "\n")
+
+	printSlice("newslice:", newslice)
+}
+
+// создал функцию для быстрого вывода слайса
+func printSlice(s string, x []int) {
+	fmt.Printf("%s len=%d cap=%d elements: %v\n",
+		s, len(x), cap(x), x)
 }
