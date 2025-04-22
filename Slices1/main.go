@@ -48,7 +48,7 @@ func main() {
 		if cars[i].isElectric {
 			fmt.Println(cars[i].model, "is an Elecric car!")
 		} else {
-			fmt.Println(cars[i].model, "is not an Elecric car!\n")
+			fmt.Print(cars[i].model, "is not an Elecric car!\n\n")
 		}
 
 		i++
@@ -59,7 +59,7 @@ func main() {
 	fmt.Println("cap of slice cars -", c, "length of slice cars - ", l) // вместимость (ёмкость) и длина слайса cars
 
 	//слайс через make
-	newslice := make([]int, 5, 6) // len(newslice) = 5, cap(newslice) = 10
+	newslice := make([]int, 5, 8) // len(newslice) = 5, cap(newslice) = 10
 
 	// наполняю слайс значениями через цикл
 	i = 0
@@ -77,7 +77,7 @@ func main() {
 	// вывожу новый слайс и смотрю его длину и ёмкость
 	fmt.Println(newslice)
 	fmt.Println(len(newslice))
-	fmt.Println(cap(newslice), "\n")
+	fmt.Print(cap(newslice), "\n\n")
 
 	printSlice("newslice:", newslice) // newslice: len=5 cap=6 elements: [0 1 2 3 4]
 
@@ -85,7 +85,14 @@ func main() {
 	printSlice("newslice", newslice) // newslice len=6 cap=6 elements: [0 1 2 3 4 52]
 
 	addOneElem(&newslice)            // и ещё раз для того чтобы выйти за пределы текущей ёмкости
-	printSlice("newslice", newslice) // newslice len=7 cap=12 elements: [0 1 2 3 4 52 52] (ёмкость увеличилась вдвое при добавлении массива)
+	printSlice("newslice", newslice) // newslice len=7 cap=12 elements: [0 1 2 3 4 52 52] (ёмкость увеличилась вдвое при добавлении массива!)
+
+	// ниже небольшой участок кода чтобы посмотреть как работает range
+	var pow = []int{1, 2, 4, 8, 16, 32, 64, 128}
+
+	for i, v := range pow { // рэнж выдает два значения: 1ое- индекс элемента, 2ое- значение элемента (если одно из значений не нужно, то вместо него можно поставить _ )
+		fmt.Printf("2^%d = %d\n", i, v)
+	}
 }
 
 // создал функцию для быстрого вывода слайса
@@ -94,9 +101,9 @@ func printSlice(s string, x []int) {
 		s, len(x), cap(x), x)
 }
 
-// функция работает с указателем на слайс, чтобы изменения касались не копии, а оригинала
+// функция добавления элемента работает с указателем на слайс, чтобы изменения касались не копии, а оригинала (append выходит за объём слайса и создает отдельный базовый массив для слайса x []int в функции)
 func addOneElem(x *[]int) {
-	*x = append(*x, 52)
+	*x = append(*x, 1)
 }
 
 /** В Go массив и слайс - это принципиально разные структуры данных. Массив - это фиксированная по размеру область памяти, чей тип включает его размер (например, [3]int). При передаче массива в функцию происходит полное копирование данных, что может быть затратно для больших массивов.

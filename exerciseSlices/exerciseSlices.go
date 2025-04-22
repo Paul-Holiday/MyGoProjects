@@ -3,9 +3,8 @@
 package main
 
 import (
-	"fmt"
-
 	"golang.org/x/tour/pic"
+	// "fmt"
 )
 
 func Pic(dx, dy int) [][]uint8 {
@@ -14,19 +13,19 @@ func Pic(dx, dy int) [][]uint8 {
 		matrix[i] = make([]uint8, dx)
 	}
 
-	for i := 0; i < dy; i++ {
-		for j := 0; j < dx; j++ {
+	for x := 0; x < dy; x++ {
+		for y := 0; y < dx; y++ {
 			res := 1
-			pow := 1
-			for f := j; f > 0; {
+			base := x
+			for f := y; f > 0; {
 				if f%2 == 1 {
-					res *= pow
+					res *= base
 				}
-				pow *= i
+				base *= base
 				f = f >> 1
 			}
-			matrix[i][j] = uint8(res)
-			fmt.Printf("x=%d y=%d x^y=%d", i, j, res)
+			matrix[x][y] = uint8(res)
+			// fmt.Printf("x=%d y=%d x^y=%d\n", x, y, uint64(res)) // снять комментирование, чтобы убедиться, что возведение работает верно, но ведет себя неадекватно из-за переполнения переменной (пока не знаю что в таких случаях делать)
 		}
 	}
 	return (matrix)
