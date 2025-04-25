@@ -6,11 +6,75 @@ import (
 
 func main() {
 	slice := []int{1, 0, 4, 5, 6, 5, 5, 5, 4, 5, 6, 7, 8, 10, 11, 12, 14, 1, -1, -3, -5, -2, -1, 0, 3, 10, 11}
-	sequence := make([]int, 0, len(slice))
-	lis, sequence := LongestIncreasingSubsequence(slice)
-	fmt.Println(lis, sequence)
+	lis := LongestIncreasingSubsequence(slice)
+	fmt.Println(lis)
 }
 
+// решение данной задачи с помощью жадного алгоритма (с бинарным поиском) оказалось намного более простым и эффективным решением,
+// чем решение с помощью динамического программирования. Сложность O(log(n)), а логика намного проще
+func LongestIncreasingSubsequence(slice []int) int {
+	if len(slice) == 0 {
+		return 0
+	}
+	tails := []int{}
+
+	for _, v := range slice {
+		i := BinarySearch(tails, v)
+		if i == len(tails) {
+			tails = append(tails, v)
+		} else {
+			tails[i] = v
+		}
+	}
+	return len(tails)
+}
+
+// мой первый бинарный поиск, написал "руками"
+// на самом деле оказалось проще, чем  казалось
+func BinarySearch(nums []int, x int) int {
+
+	left, right := 0, len(nums)-1
+
+	for left <= right {
+		mid := left + (right-left)/2
+
+		if x == nums[mid] {
+			return mid
+		} else if x > nums[mid] {
+			left = mid + 1
+		} else {
+			right = mid - 1
+		}
+	}
+	return left
+}
+
+/*
+func LongestIncreasingSubsequence(slice []int) int {
+	if len(slice) == 0 {
+		return 0
+	}
+
+	count := 1
+	MaxLen := 1
+
+	for i := 0; i < len(slice)-1; i++ {
+		if slice[i+1] > slice[i] {
+			count++
+			if count > MaxLen {
+				MaxLen = count
+			}
+		} else {
+			count = 1
+		}
+
+	}
+
+	return MaxLen
+}
+*/
+
+/*
 func LongestIncreasingSubsequence(slice []int) (int, []int) {
 	if len(slice) == 0 { // проверка на пустой слайс
 		return 0, nil
@@ -56,41 +120,19 @@ func LongestIncreasingSubsequence(slice []int) (int, []int) {
 			// то сохраним её в переменную для вывода
 			// а так же сохраняем индекс её последнего элемента, он не может храниться вместе с предыдущими
 		}
+		fmt.Printf("Slice:    %v\ndp:       %v\nprevious: %v\nMaxLen = %d, LastIndex = %d\n_________________\n", slice, dp, prev, maxLen, LastIndex)
 	}
 
 	sequence := make([]int, 0, maxLen)
 	for i := LastIndex; i != -1; i = prev[i] {
 		sequence = append(sequence, slice[i])
 	}
+	fmt.Printf("Sequence: %v\n", sequence)
 
 	for i, j := 0, len(sequence)-1; i < j; i, j = i+1, j-1 {
 		sequence[i], sequence[j] = sequence[j], sequence[i]
 	}
 
 	return maxLen, sequence
-}
-
-/*
-func LongestIncreasingSubsequence(slice []int) int {
-	if len(slice) == 0 {
-		return 0
-	}
-
-	count := 1
-	MaxLen := 1
-
-	for i := 0; i < len(slice)-1; i++ {
-		if slice[i+1] > slice[i] {
-			count++
-			if count > MaxLen {
-				MaxLen = count
-			}
-		} else {
-			count = 1
-		}
-
-	}
-
-	return MaxLen
 }
 */
