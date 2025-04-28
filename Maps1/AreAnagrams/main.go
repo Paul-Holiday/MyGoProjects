@@ -3,12 +3,12 @@ package main
 import "fmt"
 
 func main() {
-	a := "кабнн"
+	a := "кабан"
 	b := "банка"
 	fmt.Println(AreAnagrams(a, b))
 }
 
-func AreAnagrams(a, b string) bool {
+func AreAnagrams(a, b string) bool { // решение через одну мапу, это эффективнее по памяти
 	if len(a) != len(b) {
 		return false
 	}
@@ -32,7 +32,7 @@ func AreAnagrams(a, b string) bool {
 	return true
 }
 
-/*
+/* это решение через две мапы, где я вычитаю частоты появления элементов в одной мапе из другой
 func AreAnagrams(a, b string) bool {
 	if len(a) != len(b) {
 		return false
