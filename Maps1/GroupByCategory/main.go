@@ -15,18 +15,21 @@ func main() {
 		{"Стол", "Мебель"},
 		{"Чашка", "Посуда"},
 		{"Тарелка", "Посуда"},
+		{"Чайник", "Посуда"},
 	}
+
 	resultMap := GroupByCategory(prod)
 	fmt.Println(resultMap)
 }
 
-func GroupByCategory(products []struct {
-	Name     string
-	Category string
-}) map[string][]string {
+func GroupByCategory(products []Products) map[string][]string {
+	if len(products) == 0 {
+		return map[string][]string{}
+	}
+
 	mapOfProds := make(map[string][]string)
-	for i := range products {
-		mapOfProds[products[i].Category] = append(mapOfProds[products[i].Category], products[i].Name)
+	for _, p := range products {
+		mapOfProds[p.Category] = append(mapOfProds[p.Category], p.Name)
 	}
 	return mapOfProds
 }
