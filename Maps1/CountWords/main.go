@@ -11,21 +11,41 @@ func main() {
 	fmt.Println(CharFreq(fruit))
 }
 
-// частота каждого из слов
 func CountWords(words []string) map[string]int {
-	wordsMap := make(map[string]int)
-	for _, v := range words {
-		wordsMap[v]++
+	wordsFreq := make(map[string]int)
+
+	for _, word := range words {
+		wordsFreq[word] += 1
 	}
-	return wordsMap
+
+	return wordsFreq
 }
 
-// частота символов в строке
-func CharFreq(str string) map[string]int {
-	chFreq := make(map[string]int)
+func CharFreq(word string) map[string]int {
+	charFreq := make(map[string]int)
 
-	for _, r := range str {
-		chFreq[string(r)]++
+	for _, char := range word {
+		charFreq[string(char)]++
 	}
-	return chFreq
+
+	return charFreq
 }
+
+// // частота каждого из слов
+// func CountWords(words []string) map[string]int {
+// 	wordsMap := make(map[string]int)
+// 	for _, v := range words {
+// 		wordsMap[v]++
+// 	}
+// 	return wordsMap
+// }
+
+// // частота символов в строке
+// func CharFreq(str string) map[string]int {
+// 	chFreq := make(map[string]int)
+
+// 	for _, r := range str {
+// 		chFreq[string(r)]++
+// 	}
+// 	return chFreq
+// }
