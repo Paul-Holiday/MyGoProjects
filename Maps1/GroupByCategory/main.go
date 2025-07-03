@@ -8,28 +8,29 @@ type Products struct {
 }
 
 func main() {
-	prod := []Products{
+	goods := []Products{
 		{"Мука", "Бакалея"},
+		{"Чайник", "Посуда"},
 		{"Сахар", "Бакалея"},
 		{"Диван", "Мебель"},
 		{"Стол", "Мебель"},
 		{"Чашка", "Посуда"},
 		{"Тарелка", "Посуда"},
-		{"Чайник", "Посуда"},
 	}
 
-	resultMap := GroupByCategory(prod)
+	resultMap := GroupByCategory(goods)
 	fmt.Println(resultMap)
 }
 
+// группирую по ключу
 func GroupByCategory(products []Products) map[string][]string {
 	if len(products) == 0 {
 		return map[string][]string{}
 	}
 
-	mapOfProds := make(map[string][]string)
+	groupedProducts := make(map[string][]string)
 	for _, p := range products {
-		mapOfProds[p.Category] = append(mapOfProds[p.Category], p.Name)
+		groupedProducts[p.Category] = append(groupedProducts[p.Category], p.Name)
 	}
-	return mapOfProds
+	return groupedProducts
 }
