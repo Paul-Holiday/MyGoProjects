@@ -14,6 +14,8 @@ func main() {
 	}
 }
 
+// функция возвращает true/false в зависимости от того рабочий/выходной день
+// получен на вход функции
 func IsWorkingDayFunc(day time.Time) bool {
 	weekday := day.Weekday()
 	return weekday >= time.Monday && weekday <= time.Friday
