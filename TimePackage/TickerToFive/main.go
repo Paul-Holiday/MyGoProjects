@@ -18,7 +18,7 @@ func main() {
 
 	tick := 0
 
-	fmt.Println("Ticker launched! Press Enter to.")
+	fmt.Println("Ticker launched! Press Enter to stop.")
 	for {
 		select {
 		case <-ticker.C:
