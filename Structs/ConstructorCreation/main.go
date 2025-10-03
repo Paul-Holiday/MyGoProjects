@@ -20,7 +20,7 @@ func NewPerson(id int, name string, age int, email string) *Person {
 }
 
 func main() {
-	students := []Person{}
+	students := []*Person{}
 	id := 0
 	name := ""
 	age := 0
@@ -40,7 +40,7 @@ func main() {
 		// сообщение что запись об ученике успешно создана
 		fmt.Printf("Запись об ученике создана! id: %d. Имя: %s. Возраст: %d. E-mail:%s \n\n", id, name, age, email)
 
-		students = append(students, *NewPerson(id, name, age, email))
+		students = append(students, NewPerson(id, name, age, email))
 		// меняем id для каждого последующего ученика
 		id++
 	}
