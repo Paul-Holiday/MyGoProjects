@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 // -- Структуры--
@@ -34,27 +38,46 @@ func NewLibrary(b []*Book, name string) *Library {
 // --МЕТОДЫ ДЛЯ Book--
 // Изменение параметров книги (для администрирования системы)
 func (b *Book) ChangeBookAttribute() {
+	// обработка нила для безопасного поведения
+	if b == nil {
+		fmt.Println("Книга, которую пытались изменить == nil. (Книга не найдена) Ошибка!")
+		return
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+
 	fmt.Printf("--МЕНЮ ИЗМЕНЕНИЯ ПАРАМЕТРОВ КНИГИ--\n\n Введите:\n1 - Чтобы изменить название книги.\n2 - Чтобы изменить автора книги.\n3 - Чтобы изменить ISBN книги.\n4 - Чтобы изменить год публикации книги.\n")
 	var parameter int
-	_, err := fmt.Scan(&parameter)
+	_, err := fmt.Scanln(&parameter)
 	if err != nil {
 		fmt.Println("Ошибка ввода!")
+		return
 	} else {
 		switch parameter {
 		case 1:
 			fmt.Printf("Введите новое название книги: ")
-			fmt.Scanln(&b.title)
+			input, _ := reader.ReadString('\n')
+			b.title = strings.TrimSpace(input)
 		case 2:
 			fmt.Printf("Введите нового автора книги: ")
-			fmt.Scanln(&b.author)
+			input, _ := reader.ReadString('\n')
+			b.author = strings.TrimSpace(input)
 		case 3:
 			fmt.Printf("Введите новый ISBN книги: ")
-			fmt.Scanln(&b.isbn)
+			input, _ := reader.ReadString('\n')
+			b.isbn = strings.TrimSpace(input)
 		case 4:
 			fmt.Printf("Введите новый год публикации книги: ")
-			fmt.Scanln(&b.year)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+			b.year, err = strconv.Atoi(input)
+			if err != nil {
+				fmt.Println("Ошибка ввода! Год должен быть числом!")
+				return
+			}
 		default:
-			fmt.Println("Ошибка ввода!")
+			fmt.Println("Ошибка ввода! Для выбора изменяемого параметра нажмите 1-4!")
+			return
 		}
 		fmt.Printf("\nПараметр %d изменён.\n", parameter)
 	}
@@ -68,9 +91,11 @@ func (lib *Library) AddBook(newbook *Book) {
 
 // Найти книгу по названию или ISBN
 func (lib *Library) FindBookBy() *Book {
+	reader := bufio.NewReader(os.Stdin)
+
 	fmt.Printf("\n--МЕНЮ ПОИСКА КНИГИ--\n\nВведите:\n1 - Поиск по названию.\n2 - Поиск по isbn.\n")
 	var parameter int
-	_, err := fmt.Scan(&parameter)
+	_, err := fmt.Scanln(&parameter)
 
 	// обработка пустого ввода
 	if err != nil {
@@ -81,19 +106,19 @@ func (lib *Library) FindBookBy() *Book {
 		// Поиск по названию
 		case 1:
 			fmt.Printf("\nВведите название: ")
-			var title string
-			_, err := fmt.Scanln(&title)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
 
 			// обработка пустого ввода названия
-			if err != nil {
-				fmt.Println("Ошибка ввода!")
+			if len(input) == 0 {
+				fmt.Println("Ошибка ввода! Нужно ввести название книги!")
 				return nil
 			} else {
 				// цикл поиска по названию, флаг чтобы был вывод, если книги нет
 				flag := false
 				for _, book := range lib.book {
-					if book.title == title {
-						fmt.Printf("Книга %v найдена!", book)
+					if strings.EqualFold(book.title, input) {
+						fmt.Printf("Книга %v найдена!\n", book)
 						flag = true
 						return book
 					}
@@ -106,17 +131,18 @@ func (lib *Library) FindBookBy() *Book {
 		// Поиск по ISBN
 		case 2:
 			fmt.Printf("\nВведите ISBN в формате xxx-x-xxxxx-xxx-x: ")
-			var isbn string
-			_, err := fmt.Scanln(&isbn)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+
 			// обработка пустого ввода
-			if err != nil {
-				fmt.Println("Ошибка ввода!")
+			if len(input) == 0 {
+				fmt.Println("Ошибка ввода! Нужно ввести ISBN!")
 				return nil
 			} else {
 				// цикл поиска по isbn, флаг чтобы был вывод, если книги нет
 				flag := false
 				for _, book := range lib.book {
-					if book.isbn == isbn {
+					if book.isbn == input {
 						fmt.Printf("Книга %v найдена!", book)
 						flag = true
 						return book
@@ -137,20 +163,38 @@ func (lib *Library) FindBookBy() *Book {
 }
 
 // Удалить книгу по названию
-func (lib *Library) DeleteBookByTitle(title string) {
-	fmt.Printf("\nУдаление книги %s из библиотеки...", title)
-	// Поиск книги и удалене из коллекции, если найдена, если нет, то выводим сообщение о неудаче
-	flag := false
-	for index, book := range lib.book {
-		if book.title == title {
-			lib.book = append(lib.book[:index], lib.book[index+1:]...)
-			fmt.Printf("\nКнига %s была удалена из библиотеки.\n", title)
-			flag = true
-			break
-		}
+func (lib *Library) DeleteBookByTitle() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Введите название книги для её удаления, введите 'отмена', чтобы ничего не удалять.")
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(input)
+
+	// Обработка отмены
+	if strings.EqualFold(input, "отмена") {
+		fmt.Println("Удаление было прервано пользователем.")
+		return
 	}
-	if !flag {
-		fmt.Printf("\nКнига %s не найдена. Невозможно удалить.\n", title)
+
+	// Обработка пустого ввода названия
+	if len(input) == 0 {
+		fmt.Println("Ошибка ввода! Нужно ввести название книги!")
+		return
+	} else {
+		// Поиск книги и удалене из коллекции, если найдена, если нет, то выводим сообщение о неудаче
+		fmt.Printf("\nУдаление книги %s из библиотеки...", input)
+		flag := false
+		for index, book := range lib.book {
+			if strings.EqualFold(book.title, input) {
+				lib.book = append(lib.book[:index], lib.book[index+1:]...)
+				fmt.Printf("\nКнига %s была удалена из библиотеки.\n", book.title)
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			fmt.Printf("\nКнига %s не найдена. Невозможно удалить.\n", input)
+			return
+		}
 	}
 }
 
@@ -186,9 +230,13 @@ func (b *Book) GetBook() *Book {
 	return b
 }
 
-// Геттер для Library
-func (lib *Library) GetBooks() *Library {
-	return &Library{lib.book, lib.name}
+// Вывод всех книг
+func (lib *Library) DisplayAllBooks() {
+	fmt.Println("\n--ВСЕ КНИГИ В БИБЛИОТЕКЕ--\n\n")
+	for i, b := range lib.book {
+		fmt.Printf("%d. \"%s\" - %s (%d) [ISBN: %s]\n",
+			i+1, b.title, b.author, b.year, b.isbn)
+	}
 }
 
 func main() {
@@ -216,17 +264,17 @@ func main() {
 	lib1.FindBookBy().ChangeBookAttribute()
 
 	// удалим книгу Унесенные ветром из библиотеки
-	lib1.DeleteBookByTitle("Унесенные ветром") // не реализовал меню в консоли так как не хватило мотивации и сил, просто ввожу название в качестве аргумента функции
+	lib1.DeleteBookByTitle() // не реализовал меню в консоли так как не хватило мотивации и сил, просто ввожу название в качестве аргумента функции
 
 	//выводим одну книгу
 	fmt.Println(lib1.FindBookBy().GetBook())
 
 	// выводим все книги
-	fmt.Println(lib1.GetBooks())
+	lib1.DisplayAllBooks()
 
 	// сортируем книги по названию
 	lib1.SortByTitle()
 
 	//выводим все книги
-	fmt.Println(lib1.GetBooks())
+	lib1.DisplayAllBooks()
 }
