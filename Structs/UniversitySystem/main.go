@@ -123,6 +123,16 @@ func (f *Faculty) DisplayStructure() {
 	}
 }
 
+func (f *Faculty) FindTeacher(name string) *Teacher {
+	for _, dep := range f.Departments {
+		found := dep.FindTeacher(name)
+		if found != nil {
+			return found
+		}
+	}
+	return nil
+}
+
 // --МЕТОДЫ UNIVERSITY--
 func (u *University) AddFaculty(f *Faculty) {
 	if u == nil {
@@ -155,12 +165,18 @@ func (u *University) DisplayUniversity() {
 	}
 }
 
-func (u *University) FindTeacherEveryWhere(name string) *Teacher {
-	return nil // пока не сделал
+func (u *University) FindTeacherEverywhere(name string) *Teacher {
+	for _, fac := range u.Faculties {
+		found := fac.FindTeacher(name)
+		if found != nil {
+			return found
+		}
+	}
+	return nil
 }
 
 func main() {
-	// Создаём преподавателей
+	//Создаём преподавателей
 	mathTeacher := NewTeacher("Иван Петров", "Математика", 50000, 10)
 	physicsTeacher := NewTeacher("Анна Сидорова", "Физика", 55000, 15)
 
@@ -183,4 +199,11 @@ func main() {
 	// Демонстрация работы методов
 	university.DisplayUniversity()
 	fmt.Printf("Общий бюджет: %.2f руб.\n", university.TotalBudget())
+
+	// Поиск преподавателя
+	found := university.FindTeacherEverywhere("Иван Петров")
+	if found != nil {
+		fmt.Printf("\nНайден: ")
+		found.Introduce()
+	}
 }
