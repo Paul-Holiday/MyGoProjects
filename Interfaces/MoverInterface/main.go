@@ -26,7 +26,7 @@ func (c *Car) Move() {
 	fmt.Printf("Машина %s поехала!\n", c.Model)
 }
 
-func (c Car) Stop() {
+func (c *Car) Stop() {
 	fmt.Printf("Машина %s остановилась!\n", c.Model)
 }
 
@@ -34,7 +34,7 @@ func (b *Bicycle) Move() {
 	fmt.Printf("Велосипед %s поехал!\n", b.Model)
 }
 
-func (b Bicycle) Stop() {
+func (b *Bicycle) Stop() {
 	fmt.Printf("Велосипед %s остановился!\n", b.Model)
 }
 
@@ -42,7 +42,7 @@ func (p *Person) Move() {
 	fmt.Printf("%s поехал(а)!\n", p.Name)
 }
 
-func (p Person) Stop() {
+func (p *Person) Stop() {
 	fmt.Printf("%s остановился(ась)!\n", p.Name)
 }
 
