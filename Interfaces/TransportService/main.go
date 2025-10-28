@@ -6,6 +6,29 @@ import (
 	"time"
 )
 
+// КОМПОЗИЦИЯ ИНТЕРФЕЙСОВ
+
+type Vehicle interface {
+	Mover
+	Fueler
+	Charger
+}
+
+type Mover interface {
+	Move()
+	Stop()
+}
+
+type Fueler interface {
+	Refuel(float64) error
+	GetFuelLevel() float64
+}
+
+type Charger interface {
+	Charge(float64) error
+	GetBatteryLevel() float64
+}
+
 // ==СТРУКТУРЫ ВИДОВ ТРАНСПОРТА==
 type Car struct {
 	model     string
@@ -14,41 +37,34 @@ type Car struct {
 	fuelRate  float64 // литры/100км
 	locationX float64 // км
 	moving    bool
-	avgSpeed  int // км/ч
 	startTime time.Time
 }
 
 type Hybrid struct {
 	model      string
 	tankCap    float64 // литры
-	batCap     float64 // А*ч
+	batCap     float64 // кВт*ч
 	fuelLevel  float64 // литры
-	batLevel   float64 // А*ч
+	batLevel   float64 // кВт*ч
 	fuelRate   float64 // литры/100км
-	chargeRate float64 // А*ч/100км
+	chargeRate float64 // кВт*ч/100км
 	locationX  float64 // км
 	moving     bool
-	avgSpeed   int // км/ч
 	startTime  time.Time
 }
 
 type Escooter struct {
 	model      string
-	batСap     float64 // А*ч
-	batLevel   float64 // А*ч
-	chargeRate float64 // А*ч/100км
+	batСap     float64 // кВт*ч
+	batLevel   float64 // кВт*ч
+	chargeRate float64 // кВт*ч/100км
 	locationX  float64 // км
 	moving     bool
-	avgSpeed   int // км/ч
 	startTime  time.Time
 }
 
 // ==МЕТОДЫ CAR==
 func (c *Car) Move() {
-	if c == nil {
-		log.Println("Машина не объявлена, движение невозможно.")
-		return
-	}
 	if c.moving {
 		log.Println("Машина уже двигается.")
 		return
@@ -63,85 +79,150 @@ func (c *Car) Move() {
 }
 
 func (c *Car) Stop() {
-	if c == nil {
-		log.Println("Машина не объявлена, невозможно остановить.")
-		return
-	}
 	if !c.moving {
 		log.Println("Машина уже стоит.")
 		return
 	}
-	now := time.Now()
-	// расходованное топливо = время * ср.скорость * расход на 1 км пути
-	usedFuel := now.Sub(c.startTime).Hours() * float64(c.avgSpeed) * (c.fuelRate / 100)
-
-	// если расход топлива за время движения превысил количество топлива в баке,
-	// то выяснить когда топливо кончилось и где соответственно остановилась машина.
-	// логика:
-	// если (расходованное топливо) > количество топлива, то {
-	// путь = количество топлива / (расход на 100км / 100)
-	// координата += путь
-	// время остановки машины = время старта + путь / среднюю скорость машины
-	// лог: "Машина %s остановилась раньше запроса, так закончилось топливо. Время остановки: %s, координата остановки: %0.f\n"
-	// флаг = машина остановлена
-	// количество топлива в баке = 0
-	// }
-	if usedFuel > c.fuelLevel {
-		S := c.fuelLevel / (c.fuelRate / 100)
-		c.locationX += S
-		hoursPassed := S / float64(c.avgSpeed)
-		timeStopped := c.startTime.Add(time.Hour * time.Duration(hoursPassed))
-		log.Printf("Машина %s остановилась раньше запроса, так как закончилось топливо. Время остановки: %s, координата остановки: %0.f\n",
-			c.model, timeStopped, c.locationX)
-		c.fuelLevel = 0
-	} else {
-		// если топлива хватило, то смотрим где остановилась машина
-		// координата += время поездки * среднюю скорость
-		// лог: "Машина %s остановилась раньше запроса, так как закончилось топливо. Время остановки: %s, координата остановки: %0.f\n"
-		// флаг = машина остановлена
-		// количество топлива в баке -= расход
-		S := now.Sub(c.startTime).Hours() * float64(c.avgSpeed)
-		c.locationX += S
-		log.Printf("Машина %s была остановлена. Время остановки: %s, координата остановки: %0.f\n", c.model, now, c.locationX)
-		c.fuelLevel -= c.fuelRate / 100 * S
-	}
 	c.moving = false
+	log.Printf("Машина %s остановилась.\n", c.model)
 }
 
-// Метод должен заправлять машину на положительное количество топлива,
-// если заправляется больше, чем вмещает в себя бак,
-// то выводим лог, что бак заправлен полностью, а лишнее топливо не было заправлено
-func (c *Car) Fuel(amount float64) {
-	if c == nil {
-		log.Println("Машина не объявлена, заправка невозможна.")
-		return
-	}
+func (c *Car) Refuel(amount float64) error {
 	if c.moving {
-		log.Printf("Машина %s двигается, остановитесь, чтобы заправиться!\n", c.model)
-		return
+		return fmt.Errorf("error: car %s is moving, stop to refuel", c.model)
 	}
 	if amount <= 0 {
-		log.Println("Количество заправляемого топлива должно быть положительным!")
-		return
+		return fmt.Errorf("error: amount of fuel must be positive")
 	}
 
 	emptySpace := c.tankCap - c.fuelLevel
-
 	// если места в баке больше, чем планируется заправить, то просто добавляем топлива
 	if emptySpace > amount {
 		c.fuelLevel += amount
-		log.Printf("Бак машины %s заправлен на %0.1f/%0.1f литров.\n",
-			c.model, c.fuelLevel, c.tankCap)
-		return
+		return nil
 	}
 	c.fuelLevel = c.tankCap
-	fuelLeft := emptySpace - amount
-	log.Printf("Бак машины %s заправлен полностью - %0.1f литров. Не поместилось в бак: %0.1f л\n",
-		c.model, c.fuelLevel, fuelLeft)
+	return nil
 }
 
-func (c *Car) GetFuelLevel() {
+func (c *Car) GetFuelLevel() float64 {
+	return c.fuelLevel
+}
 
+// ==МЕТОДЫ HYBRID==
+
+func (h *Hybrid) Move() {
+	if h.moving {
+		log.Println("Гибрид уже двигается.")
+		return
+	}
+	if h.fuelLevel == 0 && h.batLevel == 0 {
+		log.Printf("У гибрида %s нет топлива и заряда, невозможно начать движение.\n", h.model)
+		return
+	}
+	h.moving = true
+	h.startTime = time.Now()
+	log.Printf("Гибрид %s начал движение.\n", h.model)
+}
+
+func (h *Hybrid) Stop() {
+	if !h.moving {
+		log.Printf("Гибрид %s уже стоит.\n", h.model)
+		return
+	}
+	log.Printf("Гибрид %s остановился.\n", h.model)
+	h.moving = false
+}
+
+func (h *Hybrid) Refuel(amount float64) error {
+	if h.moving {
+		return fmt.Errorf("error: hybrid %s is moving, stop to refuel", h.model)
+	}
+	if amount <= 0 {
+		return fmt.Errorf("error: amount of fuel must be positive")
+	}
+
+	emptySpace := h.tankCap - h.fuelLevel
+	// если места в баке больше, чем планируется заправить, то просто добавляем топлива
+	if emptySpace > amount {
+		h.fuelLevel += amount
+		return nil
+	}
+	h.fuelLevel = h.tankCap
+	return nil
+}
+
+func (h *Hybrid) Charge(energy float64) error {
+	if h.moving {
+		return fmt.Errorf("error: hybrid %s is moving, stop to charge", h.model)
+	}
+	if energy <= 0 {
+		return fmt.Errorf("error: charging energy must be positive")
+	}
+
+	emptySpace := h.batCap - h.batLevel
+
+	if emptySpace > energy {
+		h.batLevel += energy
+		return nil
+	}
+	h.batLevel = h.batCap
+	return nil
+}
+
+func (h *Hybrid) GetFuelLevel() float64 {
+	return h.fuelLevel
+}
+
+func (h *Hybrid) GetBatteryLevel() float64 {
+	return h.batLevel
+}
+
+// ==МЕТОДЫ ESCOOTER==
+
+func (esc *Escooter) Move() {
+	if esc.moving {
+		log.Println("Электросамокат уже двигается.")
+		return
+	}
+	if esc.batLevel == 0 {
+		log.Printf("У электросамоката %s нет заряда, невозможно начать движение.\n", esc.model)
+		return
+	}
+	esc.moving = true
+	esc.startTime = time.Now()
+	log.Printf("Электросамокат %s начал движение.\n", esc.model)
+}
+
+func (esc *Escooter) Stop() {
+	if !esc.moving {
+		log.Printf("Электросамокат %s уже стоит.\n", esc.model)
+		return
+	}
+	log.Printf("Электросамокат %s остановился.\n", esc.model)
+	esc.moving = false
+}
+
+func (esc *Escooter) Charge(energy float64) error {
+	if esc.moving {
+		return fmt.Errorf("error: scooter %s is moving, stop to charge", esc.model)
+	}
+	if energy <= 0 {
+		return fmt.Errorf("error: charging energy must be positive")
+	}
+
+	emptySpace := esc.batСap - esc.batLevel
+
+	if emptySpace > energy {
+		esc.batLevel += energy
+		return nil
+	}
+	esc.batLevel = esc.batСap
+	return nil
+}
+
+func (esc *Escooter) GetBatteryLevel() float64 {
+	return esc.batLevel
 }
 
 func main() {
