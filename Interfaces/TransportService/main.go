@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 // КОМПОЗИЦИЯ ИНТЕРФЕЙСОВ
@@ -24,10 +25,17 @@ type HybridVehicle interface {
 }
 
 type TestDrivable interface {
+	TransportInfoGetter
 	Mover
-	Locator
+	LocationGetter
+	LocationSetter
 	TripCalculator
 	EnergyConsumer
+	EnergyChecker
+}
+
+type TransportInfoGetter interface {
+	GetModel() string
 }
 
 type Mover interface {
@@ -48,15 +56,22 @@ type Charger interface {
 	GetBatteryCapacity() float64
 }
 
-type Locator interface {
-	GetLocation() float64
-	GetDistanceTravelled() float64
+type LocationSetter interface {
 	ChangeLocation(distance float64)
 	IncreaseDistanceTravelled(distance float64)
 }
 
+type LocationGetter interface {
+	GetLocation() float64
+	GetDistanceTravelled() float64
+}
+
 type TripCalculator interface {
 	CalculateTrip(distance float64) (fuel, energy float64, err error)
+}
+
+type EnergyChecker interface {
+	CheckEnergy(fuel, energy float64) bool
 }
 
 type EnergyConsumer interface {
@@ -112,25 +127,28 @@ func NewEscooter(model string, batCap, batLevel, chargeRate, locationX, distance
 }
 
 // ==МЕТОДЫ CAR==
+
+func (c *Car) GetModel() string {
+	return c.model
+}
+
 func (c *Car) Move() error {
 	if c.isMoving {
-		return fmt.Errorf("error: car %s is already moving", c.model)
+		return fmt.Errorf("car %s is already moving", c.model)
 
 	}
 	if c.fuelLevel == 0 {
-		return fmt.Errorf("error: no fuel in %s, refuel to move", c.model)
+		return fmt.Errorf("no fuel in %s, refuel to move", c.model)
 	}
 	c.isMoving = true
-	log.Printf("Машина %s начала движение.", c.model)
 	return nil
 }
 
 func (c *Car) Stop() error {
 	if !c.isMoving {
-		return fmt.Errorf("error: car %s is already stopped", c.model)
+		return fmt.Errorf("car %s is already stopped", c.model)
 	}
 	c.isMoving = false
-	log.Printf("Машина %s остановилась.\n", c.model)
 	return nil
 }
 
@@ -140,7 +158,7 @@ func (c *Car) IsMoving() bool {
 
 func (c *Car) Refuel(amount float64) error {
 	if c.isMoving {
-		return fmt.Errorf("error: car %s is moving, stop to refuel", c.model)
+		return fmt.Errorf("car %s is moving, stop to refuel", c.model)
 	}
 	var err error
 	c.fuelLevel, err = addUntilFull(c.fuelLevel, c.tankCap, amount)
@@ -179,45 +197,48 @@ func (c *Car) String() string {
 
 func (c *Car) CalculateTrip(distance float64) (fuel, energy float64, err error) {
 	if c.isMoving {
-		return 0, 0, fmt.Errorf("error: car %s is moving", c.model)
+		return 0, 0, fmt.Errorf("car %s is moving", c.model)
 	}
 	if distance <= 0 {
-		return 0, 0, fmt.Errorf("error: distance must be positive")
+		return 0, 0, fmt.Errorf("distance must be positive")
 	}
 
-	return distance * c.fuelRate, 0, nil
+	return distance * c.fuelRate / 100, 0, nil
 }
 
 func (c *Car) ConsumeEnergy(fuel, energy float64) error {
-	if fuel > c.tankCap {
-		return fmt.Errorf("error: cannot consume that much fuel due to max tank capacity (%0.1f)", c.tankCap)
-	}
-	if fuel > c.fuelLevel {
-		return fmt.Errorf("error: not enough fuel in car %s", c.model)
+	if fuel < 0 {
+		return fmt.Errorf("amount of fuel must be positive")
 	}
 	c.fuelLevel -= fuel
 	return nil
 }
 
+func (c *Car) CheckEnergy(fuel, energy float64) bool {
+	return fuel <= c.fuelLevel
+}
+
 // ==МЕТОДЫ HYBRID==
+
+func (h *Hybrid) GetModel() string {
+	return h.model
+}
 
 func (h *Hybrid) Move() error {
 	if h.isMoving {
-		return fmt.Errorf("error: hybrid %s is already moving", h.model)
+		return fmt.Errorf("hybrid %s is already moving", h.model)
 	}
 	if h.fuelLevel == 0 && h.batLevel == 0 {
-		return fmt.Errorf("error: no fuel or charge in hybrid %s", h.model)
+		return fmt.Errorf("no fuel or charge in hybrid %s", h.model)
 	}
 	h.isMoving = true
-	log.Printf("Гибрид %s начал движение.\n", h.model)
 	return nil
 }
 
 func (h *Hybrid) Stop() error {
 	if !h.isMoving {
-		return fmt.Errorf("error: hybrid %s is already stopped", h.model)
+		return fmt.Errorf("hybrid %s is already stopped", h.model)
 	}
-	log.Printf("Гибрид %s остановился.\n", h.model)
 	h.isMoving = false
 	return nil
 }
@@ -228,7 +249,7 @@ func (h *Hybrid) IsMoving() bool {
 
 func (h *Hybrid) Refuel(amount float64) error {
 	if h.isMoving {
-		return fmt.Errorf("error: hybrid %s is moving, stop to refuel", h.model)
+		return fmt.Errorf("hybrid %s is moving, stop to refuel", h.model)
 	}
 	var err error
 	h.fuelLevel, err = addUntilFull(h.fuelLevel, h.tankCap, amount)
@@ -238,7 +259,7 @@ func (h *Hybrid) Refuel(amount float64) error {
 
 func (h *Hybrid) Charge(energy float64) error {
 	if h.isMoving {
-		return fmt.Errorf("error: hybrid %s is moving, stop to charge", h.model)
+		return fmt.Errorf("hybrid %s is moving, stop to charge", h.model)
 	}
 	var err error
 	h.batLevel, err = addUntilFull(h.batLevel, h.batCap, energy)
@@ -285,31 +306,22 @@ func (h *Hybrid) String() string {
 
 func (h *Hybrid) CalculateTrip(distance float64) (fuel, energy float64, err error) {
 	if h.isMoving {
-		return 0, 0, fmt.Errorf("error: hybrid %s is moving", h.model)
+		return 0, 0, fmt.Errorf("hybrid %s is moving", h.model)
 	}
 	if distance <= 0 {
-		return 0, 0, fmt.Errorf("error: distance must be positive")
+		return 0, 0, fmt.Errorf("distance must be positive")
 	}
 
-	if distance*h.chargeRate < h.batLevel {
-		return 0, distance * h.chargeRate, nil
+	if distance*h.chargeRate/100 <= h.batLevel {
+		return 0, distance * h.chargeRate / 100, nil
 	}
-	fuel = (distance - h.batLevel/h.chargeRate) * h.fuelRate // (всё расстояние - расстояние которое проехали на батарее) * расход топлива на 1км
+	fuel = (distance - h.batLevel/(h.chargeRate/100)) * h.fuelRate / 100 // (всё расстояние - расстояние которое проехали на батарее) * расход топлива на 1км
 	return fuel, h.batLevel, nil
 }
 
 func (h *Hybrid) ConsumeEnergy(fuel, energy float64) error {
-	if energy > h.batCap {
-		return fmt.Errorf("error: cannot consume that much energy due to max battery capacity (%0.1f)", h.batCap)
-	}
-	if fuel > h.tankCap {
-		return fmt.Errorf("error: cannot consume that much fuel due to max tank capacity (%0.1f)", h.tankCap)
-	}
-
-	if energy > h.batLevel {
-		return fmt.Errorf("error: not enough battery charge to consume %0.1f of energy, %0.1f more needed", energy, energy-h.batLevel)
-	} else if fuel > h.fuelLevel {
-		return fmt.Errorf("error: not enough fuel in tank to consume %0.1f of fuel, %0.1f more needed", fuel, fuel-h.fuelLevel)
+	if fuel < 0 || energy < 0 {
+		return fmt.Errorf("amount of fuel and energy must be positive")
 	}
 
 	h.fuelLevel -= fuel
@@ -317,25 +329,34 @@ func (h *Hybrid) ConsumeEnergy(fuel, energy float64) error {
 	return nil
 }
 
+func (h *Hybrid) CheckEnergy(fuel, energy float64) bool {
+	if fuel > h.fuelLevel || energy > h.batLevel {
+		return false
+	}
+	return true
+}
+
 // ==МЕТОДЫ ESCOOTER==
+
+func (esc *Escooter) GetModel() string {
+	return esc.model
+}
 
 func (esc *Escooter) Move() error {
 	if esc.isMoving {
-		return fmt.Errorf("error: electric scooter %s is already moving", esc.model)
+		return fmt.Errorf("electric scooter %s is already moving", esc.model)
 	}
 	if esc.batLevel == 0 {
-		return fmt.Errorf("error: no charge in Escooter %s", esc.model)
+		return fmt.Errorf("no charge in Escooter %s", esc.model)
 	}
 	esc.isMoving = true
-	log.Printf("Электросамокат %s начал движение.\n", esc.model)
 	return nil
 }
 
 func (esc *Escooter) Stop() error {
 	if !esc.isMoving {
-		return fmt.Errorf("error: Escooter %s already stopped", esc.model)
+		return fmt.Errorf("Escooter %s already stopped", esc.model)
 	}
-	log.Printf("Электросамокат %s остановился.\n", esc.model)
 	esc.isMoving = false
 	return nil
 }
@@ -346,7 +367,7 @@ func (esc *Escooter) IsMoving() bool {
 
 func (esc *Escooter) Charge(energy float64) error {
 	if esc.isMoving {
-		return fmt.Errorf("error: scooter %s is moving, stop to charge", esc.model)
+		return fmt.Errorf("scooter %s is moving, stop to charge", esc.model)
 	}
 	var err error
 	esc.batLevel, err = addUntilFull(esc.batLevel, esc.batCap, energy)
@@ -379,38 +400,38 @@ func (esc *Escooter) IncreaseDistanceTravelled(distance float64) {
 }
 
 func (esc *Escooter) String() string {
-	return fmt.Sprintf("Electric scooter %s info:\nBattery capacity: %0.1f\nBattery level: %0.1f\nCharge Rate: %0.1f\nCurrent location: %0.1f\nLast travelled distance: %0.1f\nIs this hybrid moving? - %v\n",
+	return fmt.Sprintf("Electric scooter %s info:\nBattery capacity: %0.1f\nBattery level: %0.1f\nCharge Rate: %0.1f\nCurrent location: %0.1f\nLast travelled distance: %0.1f\nIs this scooter moving? - %v\n",
 		esc.model, esc.batCap, esc.batLevel, esc.chargeRate, esc.locationX, esc.distanceTravelled, esc.isMoving)
 }
 
 func (esc *Escooter) CalculateTrip(distance float64) (fuel, energy float64, err error) {
 	if esc.isMoving {
-		return 0, 0, fmt.Errorf("error: E.scooter %s is moving", esc.model)
+		return 0, 0, fmt.Errorf("e.scooter %s is moving", esc.model)
 	}
 	if distance <= 0 {
-		return 0, 0, fmt.Errorf("error: distance must be positive")
+		return 0, 0, fmt.Errorf("distance must be positive")
 	}
 
-	return 0, distance * esc.chargeRate, nil
+	return 0, distance * esc.chargeRate / 100, nil
 }
 
 func (esc *Escooter) ConsumeEnergy(fuel, energy float64) error {
-	if energy > esc.batCap {
-		return fmt.Errorf("error: cannot consume that much energy due to max tank capacity (%0.1f)", esc.batCap)
-	}
-
-	if energy > esc.batLevel {
-		return fmt.Errorf("error: not enough energy in E.Scooter %s", esc.model)
+	if energy < 0 {
+		return fmt.Errorf("amount of energy must be positive")
 	}
 	esc.batLevel -= energy
 	return nil
+}
+
+func (esc *Escooter) CheckEnergy(fuel, energy float64) bool {
+	return energy <= esc.batLevel
 }
 
 // ==Общая логика транспорта==
 // - заправка транспорта
 func addUntilFull(current, capacity, amount float64) (float64, error) {
 	if amount <= 0 {
-		return current, fmt.Errorf("error: amount must be positive")
+		return current, fmt.Errorf("amount must be positive")
 	}
 	emptySpace := capacity - current
 
@@ -426,51 +447,102 @@ type TransportService struct {
 	logger *log.Logger
 }
 
+func NewTransportService() *TransportService {
+	return &TransportService{
+		logger: log.New(os.Stdout, "TRANSPORT:", log.LstdFlags),
+	}
+}
+
 func (ts *TransportService) TestDrive(vehicle TestDrivable, distance float64) error {
+	model := vehicle.GetModel()
+	// лог что тест драйв начался
+	ts.logger.Printf("TEST DRIVE STARTED - vehicle: %s, distance: %.1f km", model, distance)
+
 	// 1. Рассчитать необходимое топливо для поездки
-	fuel, energy, err := vehicle.CalculateTrip(float64(distance))
+	fuel, energy, err := vehicle.CalculateTrip(distance)
 	if err != nil {
-		return err
+		// лог об ошибке
+		ts.logger.Printf("ERROR: Trip calculation failed - vehicle: %s, error: %v", model, err)
+		return fmt.Errorf("trip calculation failed, %w", err)
 	}
+
+	// лог о том сколько топлива надо для тест драйва
+	ts.logger.Printf("CALCULATION - vehicle: %s, fuel_needed: %.1f, energy_needed: %.1f", model, fuel, energy)
+
 	// 2. Определить хватает ли топлива
-	err = vehicle.ConsumeEnergy(fuel, energy)
-	if err != nil {
+	if !vehicle.CheckEnergy(fuel, energy) {
+		// лог об ошибке
+		err = fmt.Errorf("insufficient energy: need fuel=%0.1f, energy=%0.1f", fuel, energy)
+		ts.logger.Printf("ERROR: Energy check failed - vehicle: %s, error: %v", model, err)
 		return err
 	}
-	// 3. Запустить поездку и сделать лог об этом
+
+	// 3. Запустить поездку и потребить топливо, сделать лог об этом
+	// лог что vehicle начинает движение
+	ts.logger.Printf("MOVING - vehicle %s is starting", model)
 	err = vehicle.Move()
 	if err != nil {
-		return err
+		// лог об ошибке
+		ts.logger.Printf("ERROR: Failed to start moving - vehicle: %s, error: %v", model, err)
+		return fmt.Errorf("failed to start moving, %w", err)
 	}
-	// сделать лог
+
+	err = vehicle.ConsumeEnergy(fuel, energy)
+	if err != nil {
+		ts.logger.Printf("ERROR: Failed to consume energy - vehicle: %s, error: %v", model, err)
+		if stopErr := vehicle.Stop(); stopErr != nil {
+			// лог об ошибке
+			ts.logger.Printf("ERROR: Failed to stop - vehicle: %s, error: %v", model, stopErr)
+			return fmt.Errorf("failed to consume energy and failed to stop: %w; %w", err, stopErr)
+		}
+		return fmt.Errorf("energy consumption failed, %w", err)
+	}
+	// лог что было потреблено опр количество топлива/энергии
+	ts.logger.Printf("ENERGY_CONSUMED - vehicle: %s, fuel: %.1f, energy: %.1f", model, fuel, energy)
+
 	// 4. Посчитать координату и добавить пробег
 	vehicle.ChangeLocation(distance)
 	vehicle.IncreaseDistanceTravelled(distance)
+	// лог об обновлении локации
+	ts.logger.Printf("LOCATION_UPDATED - vehicle: %s, new_location: %.1f, total_distance: %.1f", model, vehicle.GetLocation(), vehicle.GetDistanceTravelled())
+
 	// 5. Закончить поездку сделать лог об этом
+	//лог что vehicle останавливается
+	ts.logger.Printf("STOPPING - vehicle %s is stopping", model)
 	err = vehicle.Stop()
 	if err != nil {
-		return err
+		ts.logger.Printf("ERROR: Failed to stop - vehicle: %s, error: %v", model, err)
+		return fmt.Errorf("failed to stop: %w", err)
 	}
-	// сделать лог что поездка окончена
+
 	// 6. Лог что транспорт прошел тест драйв
-	// сделать лог что транспорт прошел тестдрайв
+	ts.logger.Printf("TEST DRIVE COMPLETED - vehicle: %s, distance: %.1f", model, distance)
 	return nil
 }
 
-func (ts *TransportService) Refuel(vehicle interface{}, amount float64) error {
-	// Универсальная заправка - работает с любым транспортом, поддерживающим Fueler
-	// здесь походу typeSwitch
-}
-
-func (ts *TransportService) Charge(vehicle interface{}, energy float64) error {
-	// Универсальная зарядка - работает с любым транспортом, поддерживающим Charger
-}
-
-func (ts *TransportService) GetVehicleInfo(vehicle interface{}) string {
-	// Возвращает информацию о транспорте в зависимости от его возможностей
-}
-
 func main() {
-	log.Println()
-	fmt.Println()
+	fmt.Println("=== СИСТЕМА ТЕСТ-ДРАЙВОВ ===")
+	ts := NewTransportService()
+
+	car := NewCar("Toyota Camry", 60, 30, 8.5, 0, 0, false)
+	hybrid := NewHybrid("Toyota Prius", 45, 5, 20, 3, 5, 1.5, 0, 0, false)
+	scooter := NewEscooter("Xiaomi Pro", 0.5, 0.3, 0.1, 0, 0, false)
+
+	vehicles := []TestDrivable{car, hybrid, scooter}
+
+	for i, vehicle := range vehicles {
+		fmt.Printf("\n--- Тест-драйв %d ---\n", i+1)
+		fmt.Println("Состояние до тест-драйва:")
+		fmt.Println(vehicle)
+
+		err := ts.TestDrive(vehicle, 50)
+		if err != nil {
+			fmt.Printf("Тест-драйв завершился ошибкой: %v\n", err)
+		} else {
+			fmt.Println("Тест-драйв успешно завершен!")
+		}
+
+		fmt.Println("Состояние после тест-драйва:")
+		fmt.Println(vehicle)
+	}
 }
