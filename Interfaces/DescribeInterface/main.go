@@ -2,8 +2,6 @@ package main
 
 import "fmt"
 
-type value interface{}
-
 func Describe(i interface{}) string {
 	switch i.(type) {
 	case int, *int:
@@ -25,18 +23,28 @@ func Describe(i interface{}) string {
 	}
 }
 
+func DescribeNew(i interface{}) string {
+	return fmt.Sprintf("%T", i)
+}
+
 func main() {
-	fmt.Println("==Вывод типа значения с помощью пустого интерфейса и TypeSwitch==")
+	fmt.Println("==Вывод типа значения с помощью пустого интерфейса и TypeSwitch (сложно и плохо)==")
 	a := 45
 	b := "Grass"
 	c := 't'
 	d := complex(13, -42)
 	e := true
 	f := map[string]int{}
+	g := &a
 
-	values := []value{a, b, c, d, e, f}
+	values := []interface{}{a, b, c, d, e, f, g}
 
 	for _, v := range values {
 		fmt.Println(Describe(v))
+	}
+	fmt.Println("==Вывод типа значения с помощью спецификатора %Т (легко и просто)==")
+
+	for _, v := range values {
+		fmt.Println(DescribeNew(v))
 	}
 }
